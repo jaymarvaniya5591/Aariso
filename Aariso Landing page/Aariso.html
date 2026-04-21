@@ -1,0 +1,1141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Aariso — The mirror that sees you.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=Manrope:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  /* warm graphite — not cold black */
+  --ink-000: oklch(0.08 0.006 60);
+  --ink-050: oklch(0.11 0.007 60);
+  --ink-100: oklch(0.14 0.008 60);
+  --ink-200: oklch(0.18 0.009 60);
+  --ink-300: oklch(0.24 0.010 60);
+  --ink-400: oklch(0.34 0.010 60);
+  --ink-500: oklch(0.50 0.010 60);
+  --ink-600: oklch(0.66 0.008 70);
+  --ink-700: oklch(0.80 0.006 75);
+  --ink-800: oklch(0.90 0.005 80);
+  --ink-900: oklch(0.96 0.004 80);
+
+  /* primary accent — purple */
+  --glow: oklch(0.62 0.24 295);
+  --glow-dim: oklch(0.52 0.22 295);
+  --glow-soft: oklch(0.62 0.24 295 / 0.18);
+  --f-display: "Instrument Serif", "Times New Roman", serif;
+  --f-sub: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --f-ui: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --pad-x: clamp(20px, 5vw, 80px);
+  --measure: 64ch;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--ink-000);color:var(--ink-800);font-family:var(--f-ui);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+html{scroll-behavior:smooth}
+body{overflow-x:hidden;font-size:16px;line-height:1.55;font-weight:300;letter-spacing:0.005em}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+::selection{background:var(--glow);color:var(--ink-000)}
+
+/* subtle film grain overlay for depth */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:200;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.45 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
+  mix-blend-mode:overlay;opacity:0.35;
+}
+
+/* ============ TYPE ============ */
+.display{font-family:var(--f-display);font-weight:400;line-height:0.95;letter-spacing:-0.015em;color:var(--ink-900)}
+.display .i{font-style:italic}
+h1.display{font-size:clamp(34px, 4.8vw, 76px)}
+h2.display{font-size:clamp(36px, 5.6vw, 88px)}
+h3.display{font-size:clamp(28px, 3.4vw, 56px)}
+
+.eyebrow{
+  font-family:var(--f-mono);font-weight:400;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;
+  color:var(--ink-600);
+}
+.eyebrow::before{content:"";display:inline-block;width:24px;height:1px;background:var(--ink-500);vertical-align:middle;margin-right:12px;transform:translateY(-2px)}
+.body{font-size:17px;line-height:1.6;color:var(--ink-700);font-weight:300;max-width:var(--measure);text-wrap:pretty}
+
+/* ============ LAYOUT ============ */
+section{position:relative;padding-left:var(--pad-x);padding-right:var(--pad-x);border-top:1px solid var(--ink-200)}
+section:first-of-type{border-top:0}
+.wrap{max-width:1440px;margin:0 auto;width:100%}
+
+/* ============ NAV ============ */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:22px var(--pad-x);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  background:
+    linear-gradient(180deg, oklch(0.12 0.02 295 / 0.35) 0%, oklch(0.10 0.015 295 / 0.15) 100%);
+  border-bottom:1px solid oklch(0.90 0.05 295 / 0.08);
+  box-shadow:inset 0 1px 0 oklch(0.95 0.03 295 / 0.08), 0 8px 32px -12px oklch(0.06 0 0 / 0.4);
+  transition:border-color 400ms var(--ease), background 400ms var(--ease), backdrop-filter 400ms var(--ease);
+}
+.nav.scrolled{
+  background:linear-gradient(180deg, oklch(0.10 0.015 295 / 0.55) 0%, oklch(0.08 0.01 295 / 0.4) 100%);
+  border-bottom-color:oklch(0.90 0.05 295 / 0.14);
+}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-size:22px;letter-spacing:0.01em;color:var(--ink-900)}
+.brand .dot{width:7px;height:7px;border-radius:50%;background:var(--glow);box-shadow:0 0 12px var(--glow)}
+.nav-right{display:flex;gap:28px;align-items:center}
+.nav-right a{font-family:var(--f-mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-600);transition:color 250ms var(--ease)}
+.nav-right a:hover{color:var(--ink-900)}
+@media (max-width:720px){.nav-right a:not(.cta-mini){display:none}}
+.cta-mini{
+  padding:9px 16px;border:1px solid oklch(0.90 0.02 80 / 0.18);border-radius:0;
+  color:var(--ink-900) !important;transition:all 300ms var(--ease);
+  background:oklch(0.95 0.02 80 / 0.04);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.cta-mini:hover{border-color:oklch(0.99 0 0 / 0.6);color:var(--ink-000) !important;background:oklch(0.98 0.005 80 / 0.85)}
+
+/* ============ HERO ============ */
+#hero{
+  position:relative;
+  min-height:100vh;height:100vh;
+  padding-top:84px;padding-bottom:24px;
+  display:flex;
+  overflow:hidden;
+  border-top:0;
+}
+.hero-inner{
+  flex:1;min-height:0;position:relative;z-index:2;
+  display:grid;grid-template-rows:auto 1fr auto;gap:18px;
+}
+@media (max-width:960px){
+  #hero{height:auto;min-height:100vh;overflow:visible}
+}
+/* full-bleed video bg */
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.55) contrast(1.05) saturate(0.9)}
+.hero-video-tint{position:absolute;inset:0;background:
+  linear-gradient(180deg, oklch(0.08 0.006 60 / 0.55) 0%, transparent 25%, oklch(0.06 0.005 60 / 0.75) 100%),
+  linear-gradient(90deg, transparent 0%, transparent 55%, oklch(0.08 0.006 60 / 0.35) 100%)}
+/* single smooth slanted purple glow — left side */
+.hero-aurora{
+  position:absolute;left:0;top:0;bottom:0;width:42%;
+  pointer-events:none;
+  mix-blend-mode:screen;
+  overflow:hidden;
+  contain:paint;
+  mask-image:linear-gradient(90deg, black 0%, black 40%, transparent 90%);
+  -webkit-mask-image:linear-gradient(90deg, black 0%, black 40%, transparent 90%);
+  animation:auroraIn 600ms var(--ease) both;
+}
+.hero-aurora::before{
+  content:"";position:absolute;left:-10%;top:-30%;width:60%;height:160%;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    oklch(0.55 0.24 295 / 0.55) 25%,
+    oklch(0.65 0.28 295 / 0.9) 50%,
+    oklch(0.55 0.24 295 / 0.55) 75%,
+    transparent 100%);
+  filter:blur(56px);
+  transform:skewX(-18deg);
+  transform-origin:center;
+  will-change:opacity;
+  backface-visibility:hidden;
+  animation:pulseSmooth 3.2s ease-in-out infinite;
+  animation-delay:-1.4s;
+}
+.hero-aurora::after{
+  content:"";position:absolute;left:-15%;top:-20%;width:70%;height:140%;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    oklch(0.45 0.20 295 / 0.5) 40%,
+    oklch(0.50 0.22 295 / 0.6) 55%,
+    transparent 95%);
+  filter:blur(76px);
+  transform:skewX(-18deg);
+  will-change:opacity;
+  backface-visibility:hidden;
+  animation:pulseSmooth 3.2s ease-in-out infinite;
+  animation-delay:-2.1s;
+}
+@keyframes auroraIn{
+  from{opacity:0}
+  to{opacity:1}
+}
+@keyframes pulseSmooth{
+  0%,100%{opacity:0.24}
+  50%{opacity:0.62}
+}
+/* center column */
+.hero-center{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;min-height:0}
+.hero-center .hero-headline{max-width:18ch;text-wrap:balance}
+.hero-center .hero-sub{max-width:560px;color:var(--ink-700);font-size:17px;line-height:1.5;margin:0;animation:fadeIn 900ms var(--ease) 700ms both}
+
+/* editorial live-strip — replaces the old pill */
+.hero-pill{
+  position:relative;
+  display:inline-flex;align-items:stretch;
+  height:34px;
+  padding:0;
+  background:transparent;
+  border:0;border-radius:0;
+  color:var(--ink-900);
+  font-family:var(--f-mono);font-size:10.5px;font-weight:400;letter-spacing:0.22em;text-transform:uppercase;
+  animation:fadeIn 800ms var(--ease) 200ms both;
+  isolation:isolate;
+}
+/* corner tick frame (editorial crop-marks) */
+.hero-pill::before,
+.hero-pill::after{
+  content:"";position:absolute;width:9px;height:9px;
+  border:1px solid oklch(0.90 0.05 295 / 0.55);
+  pointer-events:none;
+}
+.hero-pill::before{left:-5px;top:-5px;border-right:0;border-bottom:0}
+.hero-pill::after{right:-5px;bottom:-5px;border-left:0;border-top:0}
+/* inner 'now piloting' block — live indicator */
+.hero-pill .pill-new{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:0 14px;
+  background:transparent;
+  color:var(--glow);
+  font-family:var(--f-mono);font-size:10.5px;font-weight:500;letter-spacing:0.24em;line-height:1;
+  border-right:1px solid oklch(0.90 0.05 295 / 0.22);
+}
+.hero-pill .pill-new::before{
+  content:"";width:6px;height:6px;border-radius:50%;
+  background:var(--glow);box-shadow:0 0 10px var(--glow), 0 0 22px var(--glow-soft);
+  animation:livePulse 1.6s var(--ease-io) infinite;
+}
+/* scrolling marquee of rooms — italic serif for the luxury feel */
+.hero-pill .pill-text{
+  position:relative;
+  display:inline-flex;align-items:center;
+  width:clamp(220px, 26vw, 320px);
+  padding:0 14px;
+  overflow:hidden;
+  color:oklch(0.96 0.01 295);
+  -webkit-mask-image:linear-gradient(90deg, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
+  mask-image:linear-gradient(90deg, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
+}
+.hero-pill .pill-text .track{
+  display:inline-flex;gap:36px;white-space:nowrap;
+  animation:pillMarquee 22s linear infinite;
+}
+.hero-pill .pill-text .track span{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--f-mono);font-size:10.5px;font-weight:400;
+  letter-spacing:0.18em;color:var(--ink-800);text-transform:uppercase;
+}
+.hero-pill .pill-text .track em{
+  font-family:var(--f-display);font-style:italic;font-size:14px;letter-spacing:0;
+  color:var(--ink-900);text-transform:none;
+  transform:translateY(-1px);
+}
+.hero-pill .pill-text .track .sep{
+  display:inline-block;width:4px;height:4px;border-radius:50%;
+  background:oklch(0.70 0.14 295 / 0.55);
+}
+@keyframes livePulse{0%,100%{opacity:0.5}50%{opacity:1}}
+@keyframes pillMarquee{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.hero-top{display:flex;justify-content:space-between;align-items:center;gap:40px;flex-wrap:wrap}
+.hero-top > .hero-pill{margin-left:auto}
+.hero-top .eyebrow{max-width:42ch}
+.hero-bottom{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;
+  padding-top:20px;border-top:1px solid var(--ink-200);
+}
+.hero-bottom-item{display:flex;flex-direction:column;gap:6px;max-width:28ch}
+.hero-bottom-item .k{font-family:var(--f-mono);font-size:10px;letter-spacing:0.2em;color:var(--ink-500);text-transform:uppercase}
+.hero-bottom-item .v{font-family:var(--f-sub);font-size:15px;color:var(--ink-900);line-height:1.3;font-weight:500;letter-spacing:-0.005em}
+
+/* ============ TECH SHADER HEADING ============ */
+.tech-head-shader{
+  position:relative;overflow:hidden;
+  width:calc(100% + 2 * var(--pad-x));
+  margin-left:calc(-1 * var(--pad-x));
+  margin-right:calc(-1 * var(--pad-x));
+  min-height:420px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--ink-000);
+  margin-bottom:0;
+}
+#techShaderCanvas{
+  position:absolute;inset:0;width:100%;height:100%;display:block;
+  mask-image:linear-gradient(to bottom, black 0%, black 85%, transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom, black 0%, black 85%, transparent 100%);
+}
+.tech-head-content{
+  position:relative;z-index:2;
+  text-align:center;
+  padding:80px var(--pad-x);
+  max-width:760px;
+  /* soft radial vignette so text pops over the shader */
+  text-shadow:0 0 40px oklch(0.06 0.005 60 / 0.8);
+}
+.tech-head-content .eyebrow{color:var(--ink-700)}
+.tech-head-content h2{text-align:center}
+.tech-head-content .body{text-align:center;color:var(--ink-700)}
+
+/* ============ SECTION: TECHNOLOGY ============ */
+#tech{
+  scroll-margin-top:70px;
+  padding-top:0;padding-bottom:160px;
+  background:
+    radial-gradient(ellipse 60% 30% at 100% 0%, oklch(0.16 0.014 75 / 0.3) 0%, transparent 60%),
+    var(--ink-000);
+}
+#tech > .wrap{padding-top:72px}
+/* tech grid: allow taller cells for 6-up technology */
+.tech-grid{grid-template-columns:repeat(3,1fr)}
+@media (max-width:720px){.tech-grid{grid-template-columns:1fr}}
+.tech-grid .priv-cell{min-height:240px}
+/* ============ SECTION: FEATURES ============ */
+#features{scroll-margin-top:70px;padding-top:0;padding-bottom:100px}
+.feat-head-shader{
+  position:relative;overflow:hidden;
+  width:calc(100% + 2 * var(--pad-x));
+  margin-left:calc(-1 * var(--pad-x));
+  margin-right:calc(-1 * var(--pad-x));
+  min-height:420px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--ink-000);
+  margin-bottom:0;
+}
+#featShaderCanvas{
+  position:absolute;inset:0;width:100%;height:100%;display:block;
+  mask-image:linear-gradient(to bottom, black 0%, black 85%, transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom, black 0%, black 85%, transparent 100%);
+}
+.feat-head-content{
+  position:relative;z-index:2;
+  text-align:center;
+  padding:80px var(--pad-x);
+  max-width:760px;
+  text-shadow:0 0 40px oklch(0.06 0.005 60 / 0.8);
+}
+.feat-head-content .eyebrow{color:var(--ink-700)}
+.feat-head-content h2{text-align:center}
+.feat-head-content .body{text-align:center;color:var(--ink-700)}
+#features > .wrap{padding-top:0}
+/* ============ SECTION: PRIVACY ============ */
+#privacy{padding-top:140px;padding-bottom:140px}
+.priv-head{text-align:center;max-width:48ch;margin:0 auto 80px}
+.priv-head h2{margin-bottom:20px}
+.priv-head h2 .i{color:var(--glow)}
+.priv-head .body{margin:0 auto;color:var(--ink-700)}
+.priv-three{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border-top:1px solid var(--ink-200);border-bottom:1px solid var(--ink-200)}
+@media (max-width:720px){.priv-three{grid-template-columns:1fr}}
+.priv-cell{padding:40px 32px;border-left:1px solid var(--ink-200);display:flex;flex-direction:column;gap:24px;min-height:280px}
+.priv-cell:first-child{border-left:0}
+.priv-mark{width:44px;height:44px;border:1px solid var(--ink-300);display:grid;place-items:center;font-family:var(--f-mono);font-size:11px;color:var(--glow);letter-spacing:0.1em}
+.priv-cell h4{font-family:var(--f-sub);font-size:22px;line-height:1.25;color:var(--ink-900);letter-spacing:-0.015em;font-weight:600}
+.priv-cell p{font-size:15px;color:var(--ink-700);line-height:1.55;max-width:32ch}
+
+/* ============ SECTION: FOUNDERS ============ */
+#founders{padding-top:140px;padding-bottom:140px;background:var(--ink-050)}
+.found{max-width:780px;margin:0 auto;text-align:left}
+.found .eyebrow{margin-bottom:40px;display:block}
+.found p{
+  font-family:var(--f-display);font-size:clamp(26px,2.6vw,38px);line-height:1.3;color:var(--ink-900);letter-spacing:-0.005em;
+}
+.found p + p{margin-top:18px}
+.found p .i{font-style:italic;color:var(--glow)}
+.found .sig{margin-top:60px;display:flex;justify-content:space-between;align-items:flex-end;gap:30px;flex-wrap:wrap;padding-top:30px;border-top:1px solid var(--ink-200)}
+.found .sig .who{font-family:var(--f-mono);font-size:11px;color:var(--ink-600);letter-spacing:0.14em;text-transform:uppercase;line-height:1.8}
+.found .sig .where{font-family:var(--f-mono);font-size:11px;color:var(--ink-600);letter-spacing:0.14em;text-transform:uppercase}
+
+/* ============ SECTION: FOOTER CTA ============ */
+#cta{padding-top:140px;padding-bottom:80px}
+.cta-head{max-width:800px;margin:0 auto 64px;text-align:center}
+.cta-head h2{margin-bottom:28px}
+.cta-form{max-width:620px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr;gap:10px}
+@media (max-width:600px){.cta-form{grid-template-columns:1fr}}
+.cta-form input{
+  background:oklch(0.95 0.02 80 / 0.04);
+  border:1px solid oklch(0.90 0.02 80 / 0.14);
+  border-radius:0;
+  padding:18px 24px;color:var(--ink-900);
+  font-family:var(--f-ui);font-size:15px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  transition:all 300ms var(--ease);
+}
+.cta-form input::placeholder{color:var(--ink-500)}
+.cta-form input:focus{outline:0;border-color:oklch(0.70 0.05 80 / 0.4);background:oklch(0.95 0.02 80 / 0.08)}
+.cta-submit{
+  grid-column:1/-1;padding:20px 28px;
+  border-radius:0;
+  border:1px solid oklch(0.95 0.04 80 / 0.18);
+  color:var(--ink-900);
+  background:linear-gradient(180deg, oklch(0.20 0.008 60 / 0.55) 0%, oklch(0.12 0.006 60 / 0.45) 100%);
+  backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);
+  font-family:var(--f-mono);font-size:12px;letter-spacing:0.2em;text-transform:uppercase;
+  box-shadow:
+    inset 0 1px 0 oklch(0.95 0.02 80 / 0.18),
+    inset 0 -1px 0 oklch(0 0 0 / 0.3),
+    0 8px 24px -8px oklch(0 0 0 / 0.5);
+  transition:all 300ms var(--ease);
+}
+.cta-submit:hover{
+  background:linear-gradient(180deg, oklch(0.98 0.005 80 / 0.85) 0%, oklch(0.92 0.005 80 / 0.75) 100%);
+  border-color:oklch(0.99 0 0 / 0.6);color:var(--ink-000);
+}
+.cta-note{text-align:center;margin-top:22px;font-family:var(--f-mono);font-size:11px;color:var(--ink-500);letter-spacing:0.1em}
+
+.footer{
+  padding:60px var(--pad-x) 40px;border-top:1px solid var(--ink-200);margin-top:100px;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:40px;flex-wrap:wrap;
+}
+.footer .brand{font-size:28px}
+.footer .f-right{display:flex;gap:32px;flex-wrap:wrap}
+.footer .f-right a{font-family:var(--f-mono);font-size:11px;color:var(--ink-600);letter-spacing:0.14em;text-transform:uppercase}
+.footer .f-right a:hover{color:var(--ink-900)}
+.footer .f-legal{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-500);letter-spacing:0.1em;width:100%;padding-top:24px;border-top:1px solid var(--ink-200);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+
+/* ============ REVEAL ============ */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity 900ms var(--ease), transform 900ms var(--ease)}
+.reveal.in{opacity:1;transform:none}
+.reveal.d1{transition-delay:120ms}
+.reveal.d2{transition-delay:220ms}
+.reveal.d3{transition-delay:320ms}
+
+/* ============ BURGER (mobile only) ============ */
+.nav-burger{
+  display:none;
+  width:34px;height:34px;
+  position:relative;
+  background:transparent;border:1px solid oklch(0.95 0.02 80 / 0.18);
+  padding:0;margin-left:10px;
+  transition:background 250ms var(--ease), border-color 250ms var(--ease);
+}
+.nav-burger span{
+  position:absolute;left:8px;right:8px;height:1px;background:var(--ink-900);
+  transition:transform 300ms var(--ease), opacity 200ms var(--ease), top 300ms var(--ease);
+}
+.nav-burger span:nth-child(1){top:11px}
+.nav-burger span:nth-child(2){top:16.5px}
+.nav-burger span:nth-child(3){top:22px}
+.nav-burger.open span:nth-child(1){top:16.5px;transform:rotate(45deg)}
+.nav-burger.open span:nth-child(2){opacity:0}
+.nav-burger.open span:nth-child(3){top:16.5px;transform:rotate(-45deg)}
+
+/* mobile nav overlay */
+.mnav{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:95;
+  display:none;flex-direction:column;justify-content:center;align-items:flex-start;
+  padding:0 28px;gap:6px;
+  background:linear-gradient(180deg, oklch(0.09 0.008 295 / 0.98) 0%, oklch(0.06 0.006 295 / 0.98) 100%);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  opacity:0;transition:opacity 320ms var(--ease);
+  pointer-events:none;
+}
+.mnav.open{display:flex;opacity:1;pointer-events:auto}
+.mnav a{
+  font-family:var(--f-display);font-size:40px;color:var(--ink-900);
+  line-height:1.1;padding:12px 0;width:100%;
+  display:flex;align-items:baseline;gap:20px;
+  border-bottom:1px solid oklch(0.95 0.02 80 / 0.1);
+  transition:color 250ms var(--ease), padding-left 300ms var(--ease);
+}
+.mnav a::before{
+  content:attr(data-ch);
+  font-family:var(--f-mono);font-size:10px;color:var(--ink-500);letter-spacing:0.2em;
+  min-width:28px;
+}
+.mnav a:hover,.mnav a:active{color:var(--glow);padding-left:6px}
+
+/* ============ MOBILE — chapter-per-screen ============ */
+@media (max-width:720px){
+  :root{
+    --pad-x:22px;
+  }
+  body{font-size:15px}
+  body.mnav-open{overflow:hidden}
+
+  /* NAV — keep fixed, compact, always show CTA */
+  .nav{
+    padding:12px var(--pad-x);
+    background:linear-gradient(180deg, oklch(0.08 0.006 60 / 0.88) 0%, oklch(0.08 0.006 60 / 0.72) 100%);
+    backdrop-filter:blur(20px) saturate(160%);
+    -webkit-backdrop-filter:blur(20px) saturate(160%);
+    border-bottom:1px solid oklch(0.90 0.05 295 / 0.12);
+  }
+  .brand{font-size:18px}
+  .brand .dot{width:6px;height:6px}
+  .nav-right{gap:8px;align-items:center}
+  .cta-mini{
+    padding:8px 14px;
+    font-size:10px;letter-spacing:0.16em;
+    border:1px solid oklch(0.95 0.02 80 / 0.30);
+    background:oklch(0.95 0.02 80 / 0.06);
+    color:var(--ink-900) !important;
+    display:inline-flex;align-items:center;
+  }
+  .nav-burger{display:block}
+
+  /* HERO — full viewport chapter, tight vertical rhythm */
+  #hero{
+    min-height:100svh;height:100svh;
+    padding-top:64px;padding-bottom:18px;
+    overflow:hidden;
+  }
+  .hero-inner{
+    gap:0;
+    grid-template-rows:auto 1fr auto;
+    min-height:0;height:100%;
+  }
+  .hero-top{
+    flex-direction:column;align-items:flex-start;gap:14px;
+    padding-top:10px;padding-bottom:0;
+  }
+  .hero-top > .hero-pill{margin-left:0}
+
+  /* eyebrow — flush left on mobile, drop the leading dash */
+  .eyebrow{font-size:10px;letter-spacing:0.2em}
+  .hero-top > .eyebrow{padding-left:0;display:block}
+  .hero-top > .eyebrow::before{display:none}
+
+  .hero-pill{height:28px;margin-top:2px}
+  .hero-pill .pill-new{padding:0 12px;font-size:9.5px;letter-spacing:0.2em}
+  .hero-pill .pill-text{width:clamp(160px, 52vw, 240px);padding:0 12px}
+  .hero-pill .pill-text .track{gap:28px}
+  .hero-pill .pill-text .track em{font-size:12.5px}
+  .hero-pill .pill-text .track span{font-size:9.5px;letter-spacing:0.14em}
+
+  /* wider purple aurora on mobile — fills more of the left side */
+  .hero-aurora{width:70%}
+  .hero-aurora::before{filter:blur(50px)}
+  .hero-aurora::after{filter:blur(70px)}
+
+  /* centered headline block — tight, vertically centered in the middle row */
+  .hero-center{
+    gap:14px;
+    padding:0;
+    justify-content:center;
+  }
+  .hero-center .hero-headline{
+    max-width:14ch;
+    font-size:clamp(36px, 9vw, 50px);
+    line-height:1;
+  }
+  .hero-center .hero-sub{
+    font-size:14px;line-height:1.5;
+    max-width:34ch;
+    color:var(--ink-700);
+  }
+
+  /* hero bottom = 2x2 credit grid */
+  .hero-bottom{
+    display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;
+    align-items:start;
+    padding-top:16px;
+    border-top:1px solid oklch(0.90 0.05 295 / 0.14);
+  }
+  .hero-bottom-item{gap:5px;max-width:none}
+  .hero-bottom-item .k{font-size:9px;letter-spacing:0.18em}
+  .hero-bottom-item .v{font-size:12.5px;line-height:1.25}
+
+  /* CHAPTER SECTIONS — heading fills 100svh, content flows below on scroll */
+  #tech, #features, #privacy, #founders, #cta{
+    padding-top:0;padding-bottom:72px;
+    display:block;
+    border-top:1px solid var(--ink-200);
+    min-height:0;
+  }
+  #tech .wrap, #features .wrap, #privacy .wrap, #founders .wrap, #cta .wrap{
+    width:100%;
+  }
+
+  /* chapter head — fills screen, eyebrow + headline + body centered */
+  .priv-head, .cta-head{
+    text-align:center;
+    max-width:100%;
+    margin:0 auto;
+    padding:76px var(--pad-x) 48px;
+    min-height:100svh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  }
+  .priv-head .eyebrow, .cta-head .eyebrow{margin-bottom:18px;display:inline-block}
+  .priv-head h2.display, .cta-head h2.display{
+    font-size:clamp(36px, 9.5vw, 52px);
+    line-height:1.04;
+    margin-top:0 !important;
+    max-width:14ch;
+    text-wrap:balance;
+  }
+  .priv-head .body{
+    font-size:14.5px;line-height:1.55;
+    margin-top:18px !important;
+    max-width:38ch;
+    color:var(--ink-700);
+  }
+  /* counter the section's horizontal padding since chapter-head provides its own */
+  #tech > .wrap > .priv-head, #features > .wrap > .priv-head,
+  #privacy > .wrap > .priv-head{
+    margin-left:calc(-1 * var(--pad-x));margin-right:calc(-1 * var(--pad-x));
+    padding-left:var(--pad-x);padding-right:var(--pad-x);
+  }
+  #cta > .wrap > .cta-head{
+    margin-left:calc(-1 * var(--pad-x));margin-right:calc(-1 * var(--pad-x));
+    padding-left:var(--pad-x);padding-right:var(--pad-x);
+  }
+
+  /* Stack all grid cells into single column with dividers, tight */
+  .priv-three, .tech-grid{
+    grid-template-columns:1fr !important;
+    border-top:1px solid var(--ink-200);
+    border-bottom:1px solid var(--ink-200);
+  }
+  .priv-cell{
+    border-left:0 !important;
+    border-top:1px solid var(--ink-200);
+    padding:28px 4px;
+    min-height:0;
+    gap:14px;
+  }
+  .priv-cell:first-child{border-top:0}
+  .priv-mark{width:36px;height:36px;font-size:10px}
+  .priv-cell h4{font-size:19px;line-height:1.25}
+  .priv-cell p{font-size:14px;line-height:1.55;max-width:42ch}
+
+  /* Founders — make it behave like chapter: heading screen first */
+  #founders{padding-top:0}
+  .found{
+    text-align:left;
+    min-height:100svh;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:76px 0 40px;
+  }
+  .found .eyebrow{margin-bottom:28px}
+  .found p{
+    font-size:clamp(22px, 5.8vw, 30px) !important;
+    line-height:1.28;
+  }
+  .found p + p{margin-top:14px}
+  .found .sig{margin-top:40px;padding-top:22px;gap:14px}
+  .found .sig .who,.found .sig .where{font-size:10px}
+
+  /* CTA — cta-head fills screen, form sits below */
+  #cta{padding-bottom:0}
+  .cta-head{margin-bottom:0}
+  .cta-head h2{font-size:clamp(30px, 8vw, 44px) !important;line-height:1.08}
+  .cta-form{
+    grid-template-columns:1fr;gap:8px;
+    padding:32px var(--pad-x) 48px;
+    margin-left:calc(-1 * var(--pad-x));margin-right:calc(-1 * var(--pad-x));
+    max-width:none;
+  }
+  .cta-form input{padding:15px 18px;font-size:14px}
+  .cta-submit{padding:17px 22px;font-size:11px;letter-spacing:0.18em}
+  .cta-note{font-size:10px;padding:0 var(--pad-x) 24px;margin-top:0}
+
+  /* Footer — force full-width block (prevents flex columnizing inside #cta) */
+  #cta .footer{
+    display:flex !important;flex-direction:column !important;align-items:flex-start !important;
+    width:auto;margin-left:calc(-1 * var(--pad-x));margin-right:calc(-1 * var(--pad-x));
+  }
+  .footer{
+    padding:32px var(--pad-x) 24px;margin-top:24px;
+    gap:22px;
+  }
+  .footer .brand{font-size:22px}
+  .footer .f-right{gap:14px 24px;flex-direction:row;flex-wrap:wrap}
+  .footer .f-right a{font-size:10px}
+  .footer .f-legal{flex-direction:column;gap:6px;padding-top:18px;font-size:9.5px;width:100%}
+
+}
+
+/* Very small phones — fine-tune */
+@media (max-width:380px){
+  .hero-center .hero-headline{font-size:42px}
+  .hero-pill .pill-text{width:clamp(140px, 46vw, 200px)}
+  .hero-bottom{gap:16px 20px}
+  .hero-bottom-item .v{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <a href="#hero" class="brand"><span class="dot"></span>Aariso</a>
+  <div class="nav-right">
+    <a href="#tech">Technology</a>
+    <a href="#features">Capabilities</a>
+    <a href="#privacy">Privacy</a>
+    <a href="#cta" class="cta-mini">Request access →</a>
+    <button class="nav-burger" id="navBurger" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- MOBILE MENU OVERLAY -->
+<div class="mnav" id="mnav" aria-hidden="true">
+  <a href="#tech" data-ch="01">Technology</a>
+  <a href="#features" data-ch="02">Capabilities</a>
+  <a href="#privacy" data-ch="03">Privacy</a>
+  <a href="#founders" data-ch="04">Founders</a>
+  <a href="#cta" data-ch="05">Request access</a>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <!-- full-bleed video background -->
+  <div class="hero-bg" aria-hidden="true">
+    <video class="hero-video" id="heroVideo" autoplay muted loop playsinline preload="auto">
+      <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260210_031346_d87182fb-b0af-4273-84d1-c6fd17d6bf0f.mp4" type="video/mp4" onerror="this.parentElement.style.display='none'" />
+    </video>
+    <div class="hero-video-tint"></div>
+    <div class="hero-aurora"></div>
+  </div>
+
+  <div class="wrap hero-inner">
+    <div class="hero-top">
+      <span class="eyebrow">Aariso ⁄ Redefining reflections</span>
+      <div class="hero-pill" aria-label="Now in pilot at India's finest hotels">
+        <span class="pill-new">Now Piloting</span>
+        <span class="pill-text">
+          <span class="track" aria-hidden="true">
+            <span><em>The Leela Palace</em> · Bengaluru</span><span class="sep"></span>
+            <span><em>Taj Lake Palace</em> · Udaipur</span><span class="sep"></span>
+            <span><em>Aman-i-Khás</em> · Ranthambore</span><span class="sep"></span>
+            <span><em>Soho House</em> · Mumbai</span><span class="sep"></span>
+            <span><em>The Oberoi</em> · New Delhi</span><span class="sep"></span>
+            <!-- duplicate for seamless loop -->
+            <span><em>The Leela Palace</em> · Bengaluru</span><span class="sep"></span>
+            <span><em>Taj Lake Palace</em> · Udaipur</span><span class="sep"></span>
+            <span><em>Aman-i-Khás</em> · Ranthambore</span><span class="sep"></span>
+            <span><em>Soho House</em> · Mumbai</span><span class="sep"></span>
+            <span><em>The Oberoi</em> · New Delhi</span><span class="sep"></span>
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div class="hero-center">
+      <h1 class="display hero-headline">
+        The mirror that <span class="i">knows</span><br/>you.
+      </h1>
+
+      <p class="hero-sub">A genuinely intelligent bathroom mirror — not a tablet behind glass. Built for the most demanding rooms in the world.</p>
+    </div>
+
+    <div class="hero-bottom">
+      <div class="hero-bottom-item">
+        <span class="k">Engineered at</span>
+        <span class="v">HSR Layout, Bengaluru</span>
+      </div>
+      <div class="hero-bottom-item">
+        <span class="k">On-device inference</span>
+        <span class="v">NVIDIA Jetson Orin NX</span>
+      </div>
+      <div class="hero-bottom-item">
+        <span class="k">Shipping to</span>
+        <span class="v">Luxury hospitality · India</span>
+      </div>
+      <div class="hero-bottom-item">
+        <span class="k">Status</span>
+        <span class="v" style="color:var(--glow)">Pilot installations — 2026</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH -->
+<section id="tech">
+  <div class="tech-head-shader">
+    <canvas id="techShaderCanvas" aria-hidden="true"></canvas>
+    <div class="tech-head-content">
+      <span class="eyebrow reveal">Chapter 01 ⁄ Engineering</span>
+      <h2 class="display reveal d1" style="margin-top:18px">Specifications that<br/>demand to be <span class="i" style="color:var(--glow)">felt.</span></h2>
+      <p class="body reveal d2" style="margin-top:22px;text-align:center;max-width:52ch;margin-left:auto;margin-right:auto">Six layers of world-class engineering — optics, radar, AI, light — stacked behind a single sheet of two-way glass. Nothing extraneous. Nothing compromised.</p>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="priv-three tech-grid">
+      <div class="priv-cell reveal">
+        <div class="priv-mark">01</div>
+        <h4>Two-way mirror glass.</h4>
+        <p>Optical-grade silvered glass tuned for 70⁄30 transmission. Invisible when dark. Photographic when lit from within.</p>
+      </div>
+      <div class="priv-cell reveal d1">
+        <div class="priv-mark">02</div>
+        <h4>CRI 95+ lighting.</h4>
+        <p>Studio-grade LEDs with a colour rendering index above 95 — accurate enough for skin diagnostics, dermatology, and makeup.</p>
+      </div>
+      <div class="priv-cell reveal d2">
+        <div class="priv-mark">03</div>
+        <h4>Sony IMX678 optics.</h4>
+        <p>4K starlight-grade sensor with back-illuminated pixels. Reads microtexture, hydration, pigmentation — in the low light of a real bathroom.</p>
+      </div>
+      <div class="priv-cell reveal">
+        <div class="priv-mark">04</div>
+        <h4>60 GHz mmWave radar.</h4>
+        <p>Presence, depth and fall detection through steam, darkness, and doubt. Works when cameras can’t — because privacy and safety can’t be trade-offs.</p>
+      </div>
+      <div class="priv-cell reveal d1">
+        <div class="priv-mark">05</div>
+        <h4>10″ edge display.</h4>
+        <p>A single bonded display strip at the base of the mirror. Skin data, weather, the day ahead — visible only when you need it.</p>
+      </div>
+      <div class="priv-cell reveal d2">
+        <div class="priv-mark">06</div>
+        <h4>NVIDIA Jetson Orin NX.</h4>
+        <p>100 TOPS of on-device inference. Every model runs here. No frame of you ever leaves the room — architecturally, it can’t.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="feat-head-shader">
+    <canvas id="featShaderCanvas" aria-hidden="true"></canvas>
+    <div class="feat-head-content">
+      <span class="eyebrow reveal">Chapter 02 ⁄ Capabilities</span>
+      <h2 class="display reveal d1" style="margin-top:18px">Six things<br/>your mirror <span class="i" style="color:var(--glow)">should do</span> for you.</h2>
+      <p class="body reveal d2" style="margin-top:22px;text-align:center;max-width:52ch;margin-left:auto;margin-right:auto">Not a dashboard. Not a smart home hub. Six capabilities that belong exactly where you already are — mid-shave, mid-routine, mid-morning — and nowhere else.</p>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="priv-three tech-grid">
+      <div class="priv-cell reveal">
+        <div class="priv-mark">i</div>
+        <h4>Skin diagnostics.</h4>
+        <p>Texture, hydration, early pigmentation, pores. What changed overnight, what to do about it today, what’s trending across the month.</p>
+      </div>
+      <div class="priv-cell reveal d1">
+        <div class="priv-mark">ii</div>
+        <h4>Grooming assistance.</h4>
+        <p>Live zoomed preview as you shave or shape. Object detection that knows when you’re holding a razor. Symmetry guide that corrects by millimetres.</p>
+      </div>
+      <div class="priv-cell reveal d2">
+        <div class="priv-mark">iii</div>
+        <h4>AR makeup try-on.</h4>
+        <p>Try shades in real, photographic light. Colour-tuned for Indian skin tones from the ground up — what you see is what buys.</p>
+      </div>
+      <div class="priv-cell reveal">
+        <div class="priv-mark">iv</div>
+        <h4>Fall detection + voice SOS.</h4>
+        <p>mmWave radar detects a fall even through steam. Voice SOS reaches hotel PBX or your emergency contacts — seconds from the floor to a responder.</p>
+      </div>
+      <div class="priv-cell reveal d1">
+        <div class="priv-mark">v</div>
+        <h4>Circadian lighting.</h4>
+        <p>The mirror reads the time, the room, and your presence. Morning: cool and bright for accurate skin reads. Night: warm and dim, automatically.</p>
+      </div>
+      <div class="priv-cell reveal d2">
+        <div class="priv-mark">vi</div>
+        <h4>Ambient intelligence.</h4>
+        <p>Weather, your day, a personal briefing, ambient audio. The small things you used to reach for your phone for — now on the surface you’re already looking at.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section id="privacy">
+  <div class="wrap">
+    <div class="priv-head">
+      <span class="eyebrow reveal">Chapter 03 ⁄ On-device</span>
+      <h2 class="display reveal d1" style="margin-top:18px">Your face.<br/>Your data. <span class="i">Your</span> device.</h2>
+      <p class="body reveal d2" style="margin-top:22px">Every model runs on the Jetson. No frame, no biometric, no analytic ever leaves the mirror — not as a promise, as an architectural fact.</p>
+    </div>
+    <div class="priv-three">
+      <div class="priv-cell reveal">
+        <div class="priv-mark">01</div>
+        <h4>All AI runs on-device.</h4>
+        <p>Skin, grooming, makeup, radar — every inference happens on the Jetson Orin NX inside the mirror. Nothing leaves.</p>
+      </div>
+      <div class="priv-cell reveal d1">
+        <div class="priv-mark">02</div>
+        <h4>No cloud<br/>biometrics.</h4>
+        <p>Your face, your skin, your presence — never uploaded, never trained on, never offered to anyone else.</p>
+      </div>
+      <div class="priv-cell reveal d2">
+        <div class="priv-mark">03</div>
+        <h4>No accounts required.</h4>
+        <p>Core features work the moment you stand in front of it. An account exists only if you want continuity across mirrors.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOUNDERS -->
+<section id="founders">
+  <div class="wrap">
+    <div class="found">
+      <span class="eyebrow">Chapter 04 ⁄ A note from the founders</span>
+      <p class="reveal">The mirror hasn't changed in <span class="i">fifty years.</span> Every other surface in the bathroom was reimagined. Not this one.</p>
+      <p class="reveal d1">We're genuinely thrilled to innovate in this space — to bring on-device AI, sensor fusion, and cutting-edge optics to the most intimate surface in your home.</p>
+      <p class="reveal d2">We're building what it was always supposed to be.</p>
+
+      <div class="sig reveal">
+        <span class="who">Founders ⁄ Aariso<br/>IIT Kharagpur</span>
+        <span class="where">Est. 2024 · HSR Layout</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="wrap">
+    <div class="cta-head">
+      <span class="eyebrow reveal">Chapter 05 ⁄ Access</span>
+      <h2 class="display reveal d1" style="margin-top:18px">Aariso is coming to<br/>select hotels and residences<br/>in India.</h2>
+    </div>
+    <form class="cta-form reveal d2" onsubmit="return submitForm(event)">
+      <input type="email" placeholder="email address" required />
+      <input type="text" placeholder="city" required />
+      <button type="submit" class="cta-submit">I want to know when it's ready →</button>
+    </form>
+    <p class="cta-note reveal d3">We'll write once. Not a newsletter.</p>
+  </div>
+
+  <div class="footer">
+    <a href="#hero" class="brand"><span class="dot"></span>Aariso</a>
+    <div class="f-right">
+      <a href="#">Press</a>
+      <a href="#">Hospitality partners</a>
+      <a href="#">Contact</a>
+      <a href="#">Instagram</a>
+    </div>
+    <div class="f-legal">
+      <span>© 2026 Aariso Labs Pvt. Ltd. · HSR Layout, Bengaluru</span>
+      <span>Made in India · Privacy · Terms</span>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ====== TECH SECTION WEBGL SHADER ====== */
+(function(){
+  const canvas = document.getElementById('techShaderCanvas');
+  if(!canvas || !window.THREE) return;
+
+  const scene    = new THREE.Scene();
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 1);
+  const camera   = new THREE.OrthographicCamera(-1,1,1,-1,0,-1);
+
+  const vertexShader = `
+    attribute vec3 position;
+    void main(){ gl_Position = vec4(position,1.0); }
+  `;
+
+  // Purple-palette chromatic-aberration sine glow
+  // Aariso glow = oklch(0.62 0.24 295) ≈ (0.56 r, 0.18 g, 0.90 b)
+  const fragmentShader = `
+    precision highp float;
+    uniform vec2  resolution;
+    uniform float time;
+    uniform float xScale;
+    uniform float yScale;
+    uniform float distortion;
+
+    void main(){
+      vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
+      float d = length(p) * distortion;
+
+      float rx = p.x * (1.0 + d);
+      float gx = p.x;
+      float bx = p.x * (1.0 - d);
+
+      float r = 0.05 / abs(p.y + sin((rx + time) * xScale) * yScale);
+      float g = 0.05 / abs(p.y + sin((gx + time) * xScale) * yScale);
+      float b = 0.05 / abs(p.y + sin((bx + time) * xScale) * yScale);
+
+      // Map to Aariso purple — high r+b, near-zero g
+      float pr = r * 0.58 + b * 0.18;
+      float pg = g * 0.09 + r * 0.04;
+      float pb = b * 0.88 + r * 0.30;
+
+      gl_FragColor = vec4(pr, pg, pb, 1.0);
+    }
+  `;
+
+  const uniforms = {
+    resolution:  { value: [canvas.offsetWidth, canvas.offsetHeight] },
+    time:        { value: 0.0 },
+    xScale:      { value: 1.2 },
+    yScale:      { value: 0.42 },
+    distortion:  { value: 0.06 },
+  };
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+    -1,-1,0,  1,-1,0,  -1,1,0,
+     1,-1,0, -1, 1,0,   1,1,0
+  ]),3));
+  const mat = new THREE.RawShaderMaterial({ vertexShader, fragmentShader, uniforms, side: THREE.DoubleSide });
+  scene.add(new THREE.Mesh(geo, mat));
+
+  function resize(){
+    const w = canvas.parentElement.offsetWidth || 800;
+    const h = canvas.parentElement.offsetHeight || 400;
+    renderer.setSize(w, h, false);
+    const pr = renderer.getPixelRatio();
+    uniforms.resolution.value = [w * pr, h * pr];
+  }
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+
+  let raf;
+  function animate(){
+    raf = requestAnimationFrame(animate);
+    uniforms.time.value += 0.008;
+    renderer.render(scene, camera);
+  }
+  animate();
+})();
+
+/* ====== CAPABILITIES SECTION WEBGL SHADER (concentric rings) ====== */
+(function(){
+  const canvas = document.getElementById('featShaderCanvas');
+  if(!canvas || !window.THREE) return;
+
+  const scene    = new THREE.Scene();
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 1);
+  const camera   = new THREE.OrthographicCamera(-1,1,1,-1,0,-1);
+
+  const vertexShader = `
+    attribute vec3 position;
+    void main(){ gl_Position = vec4(position,1.0); }
+  `;
+
+  // Exact shader from component — natural chromatic RGB rings
+  const fragmentShader = `
+    #define TWO_PI 6.2831853072
+    #define PI 3.14159265359
+
+    precision highp float;
+    uniform vec2  resolution;
+    uniform float time;
+
+    void main(void){
+      vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+      float t = time * 0.05;
+      float lineWidth = 0.002;
+
+      // slight ambient floor avoids hard black bands at section edges
+      vec3 color = vec3(0.018, 0.006, 0.032);
+      for(int j = 0; j < 3; j++){
+        for(int i = 0; i < 5; i++){
+          color[j] += lineWidth * float(i*i) /
+            abs( fract(t - 0.01*float(j) + float(i)*0.01)*5.0
+                 - length(uv)
+                 + mod(uv.x + uv.y, 0.2) );
+        }
+      }
+
+      gl_FragColor = vec4(color[0], color[1], color[2], 1.0);
+    }
+  `;
+
+  const uniforms = {
+    resolution: { value: [canvas.offsetWidth, canvas.offsetHeight] },
+    time:       { value: 0.0 },
+  };
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+    -1,-1,0,  1,-1,0, -1,1,0,
+     1,-1,0, -1, 1,0,  1,1,0
+  ]), 3));
+  const mat = new THREE.RawShaderMaterial({ vertexShader, fragmentShader, uniforms, side: THREE.DoubleSide });
+  scene.add(new THREE.Mesh(geo, mat));
+
+  function resize(){
+    const w = canvas.parentElement.offsetWidth || 900;
+    const h = canvas.parentElement.offsetHeight || 480;
+    renderer.setSize(w, h, false);
+    const pr = renderer.getPixelRatio();
+    uniforms.resolution.value = [w * pr, h * pr];
+  }
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+
+  let raf2;
+  function animate(){
+    raf2 = requestAnimationFrame(animate);
+    uniforms.time.value += 0.0695652174;
+    // keep time bounded so fract() loops cleanly and avoids float precision drift
+    if(uniforms.time.value > 1000.0) uniforms.time.value -= 1000.0;
+    renderer.render(scene, camera);
+  }
+  animate();
+})();
+
+/* --- nav scroll state --- */
+const nav = document.getElementById('nav');
+addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', scrollY > 20);
+}, {passive:true});
+
+/* --- mobile burger menu --- */
+const burger = document.getElementById('navBurger');
+const mnav = document.getElementById('mnav');
+function closeMnav(){
+  burger.classList.remove('open');
+  mnav.classList.remove('open');
+  document.body.classList.remove('mnav-open');
+  burger.setAttribute('aria-expanded','false');
+  mnav.setAttribute('aria-hidden','true');
+}
+function toggleMnav(){
+  const open = !mnav.classList.contains('open');
+  burger.classList.toggle('open', open);
+  mnav.classList.toggle('open', open);
+  document.body.classList.toggle('mnav-open', open);
+  burger.setAttribute('aria-expanded', String(open));
+  mnav.setAttribute('aria-hidden', String(!open));
+}
+if(burger){ burger.onclick = toggleMnav; }
+mnav.querySelectorAll('a').forEach(a => a.onclick = () => closeMnav());
+
+/* --- reveal on scroll --- */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    }
+  });
+}, {threshold:0.14, rootMargin:'0px 0px -60px 0px'});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* --- form --- */
+function submitForm(e){
+  e.preventDefault();
+  const btn = document.querySelector('.cta-submit');
+  btn.textContent = 'You\'re on the list — we\'ll be in touch.';
+  btn.style.background = 'var(--glow)';
+  btn.style.color = 'var(--ink-000)';
+  return false;
+}
+
+</script>
+
+</body>
+</html>
