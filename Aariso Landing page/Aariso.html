@@ -480,6 +480,12 @@ section:first-of-type{border-top:0}
   /* HERO — full viewport chapter, tight vertical rhythm */
   .hero-bg{background:var(--ink-000)}
   .hero-video{filter:brightness(0.70) contrast(1.05) saturate(0.9);width:200%;left:-50%;right:auto}
+  .hero-video-tint{
+    background:
+      linear-gradient(180deg, oklch(0.08 0.006 60 / 0.55) 0%, transparent 25%, oklch(0.06 0.005 60 / 0.75) 100%),
+      linear-gradient(to top right, oklch(0.06 0.005 60 / 0.95) 0%, transparent 35%),
+      linear-gradient(90deg, transparent 0%, transparent 55%, oklch(0.08 0.006 60 / 0.35) 100%);
+  }
   #hero{
     min-height:100svh;height:100svh;
     padding-top:64px;padding-bottom:18px;
@@ -747,6 +753,31 @@ section:first-of-type{border-top:0}
   .hero-pill .pill-text{width:clamp(140px, 46vw, 200px)}
   .hero-bottom-item{min-width:130px}
   .hero-bottom-item .v{font-size:12px}
+}
+
+/* ============ DESKTOP HERO LIGHT RESHAPE (≥721px only) ============ */
+/* Shifts video left, widens the purple radial glow so it reaches the
+   bottom stat strip, and pulls back the tint that was crushing the
+   bottom-right into a blind spot. Mobile is untouched. */
+@media (min-width: 721px){
+  /* 1. Nudge video content slightly left so light columns sit center-left */
+  .hero-video{
+    object-position: 38% 50%;
+  }
+
+  /* 2. Widen the radial glow: explicit ellipse size + second bottom-lift glow */
+  .hero-bg{
+    background:
+      radial-gradient(ellipse 50% 28% at 35% 92%, oklch(0.11 0.04 295 / 0.28) 0%, transparent 100%),
+      radial-gradient(ellipse 88% 72% at 28% 52%, oklch(0.14 0.06 295 / 0.5) 0%, var(--ink-000) 100%);
+  }
+
+  /* 3. Reduce bottom crush (0.75→0.52) and pull right vignette back (55%→62%) */
+  .hero-video-tint{
+    background:
+      linear-gradient(180deg, oklch(0.08 0.006 60 / 0.55) 0%, transparent 22%, oklch(0.06 0.005 60 / 0.52) 100%),
+      linear-gradient(90deg, transparent 0%, transparent 62%, oklch(0.08 0.006 60 / 0.28) 100%);
+  }
 }
 
 /* ============ REDUCED MOTION ============ */
