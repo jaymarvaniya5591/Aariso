@@ -2,3 +2,10 @@
 *.webm
 .DS_Store
 Thumbs.db
+
+# Cursor / IDE workspace state
+.cursor/
+*.log
+
+# Design handoff exports
+*.zip
