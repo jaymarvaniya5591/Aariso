@@ -466,7 +466,7 @@ section:first-of-type{border-top:0}
   50%{opacity:0.6;transform:translateX(-50%) translateY(5px)}
 }
 
-/* ============ MOBILE — chapter-per-screen ============ */
+/* ============ MOBILE — robust layout for all Android devices ============ */
 @media (max-width:720px){
   :root{
     --pad-x:22px;
@@ -495,7 +495,7 @@ section:first-of-type{border-top:0}
   }
   .nav-burger{display:block}
 
-  /* HERO — full viewport chapter, tight vertical rhythm */
+  /* HERO — auto height so content never clips or overlaps */
   .hero-bg{background:var(--ink-000)}
   .hero-video{filter:brightness(0.70) contrast(1.08) saturate(1.28);width:200%;left:-50%;right:auto}
   .hero-video-tint{
@@ -505,18 +505,23 @@ section:first-of-type{border-top:0}
       linear-gradient(90deg, transparent 0%, transparent 40%, oklch(0.08 0.006 60 / 0.55) 100%);
   }
   #hero{
-    min-height:100svh;height:100svh;
-    padding-top:64px;padding-bottom:18px;
-    overflow:hidden;
+    min-height:100svh;
+    height:auto;
+    padding-top:68px;
+    padding-bottom:20px;
+    overflow:visible;
   }
   .hero-inner{
     gap:0;
     grid-template-rows:auto 1fr auto;
-    min-height:0;height:100%;
+    min-height:calc(100svh - 88px);
   }
   .hero-top{
-    flex-direction:column;align-items:flex-start;gap:14px;
-    padding-top:10px;padding-bottom:0;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+    padding-top:12px;
+    padding-bottom:8px;
   }
   .hero-top > .hero-pill{margin-left:0}
 
@@ -526,29 +531,31 @@ section:first-of-type{border-top:0}
   .eyebrow::before{display:none}
 
   .hero-pill{height:28px;margin-top:2px}
-  .hero-pill .pill-new{padding:0 12px;font-size:9.5px;letter-spacing:0.2em}
-  .hero-pill .pill-text{width:clamp(160px, 52vw, 240px);padding:0 12px}
-  .hero-pill .pill-text .track{gap:28px}
-  .hero-pill .pill-text .track em{font-size:12.5px}
+  .hero-pill .pill-new{padding:0 10px;font-size:9.5px;letter-spacing:0.2em}
+  .hero-pill .pill-text{width:clamp(140px, 48vw, 220px);padding:0 10px}
+  .hero-pill .pill-text .track{gap:24px}
+  .hero-pill .pill-text .track em{font-size:12px}
   .hero-pill .pill-text .track span{font-size:9.5px;letter-spacing:0.14em}
 
   /* left-aligned editorial headline — natural mobile reading pattern */
   .hero-center{
     gap:16px;
-    padding:0;
+    padding:12px 0;
     justify-content:center;
     align-items:flex-start;
     text-align:left;
   }
   .hero-center .hero-headline{
-    max-width:14ch;
-    font-size:clamp(40px, 10vw, 52px);
-    line-height:1;
+    max-width:100%;
+    font-size:clamp(36px, 9.5vw, 50px);
+    line-height:1.02;
     text-align:left;
+    word-break:break-word;
+    overflow-wrap:break-word;
   }
   .hero-center .hero-sub{
     font-size:15px;line-height:1.55;
-    max-width:38ch;
+    max-width:calc(100vw - 2 * var(--pad-x));
     color:var(--ink-700);
     text-align:left;
   }
@@ -556,36 +563,27 @@ section:first-of-type{border-top:0}
   /* hero bottom = horizontal scroll strip of glass stat cards */
   .hero-bottom{
     display:flex;
-    gap:10px;
-    overflow-x:auto;
-    scroll-snap-type:x mandatory;
+    flex-wrap:wrap;
+    gap:8px;
     padding:14px 0 8px;
-    margin-left:calc(-1 * var(--pad-x));
-    margin-right:calc(-1 * var(--pad-x));
-    padding-left:var(--pad-x);
-    padding-right:var(--pad-x);
     border-top:1px solid oklch(0.90 0.05 295 / 0.10);
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
   }
-  .hero-bottom::-webkit-scrollbar{display:none}
   .hero-bottom-item{
-    flex:0 0 auto;
-    min-width:140px;
+    flex:1 1 calc(50% - 4px);
+    min-width:0;
     max-width:none;
     gap:5px;
-    scroll-snap-align:start;
-    padding:12px 16px;
+    padding:10px 14px;
     border:1px solid oklch(0.95 0.02 80 / 0.08);
     background:oklch(0.95 0.02 80 / 0.03);
     backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   }
   .hero-bottom-item .k{font-size:9px;letter-spacing:0.18em}
-  .hero-bottom-item .v{font-size:13px;line-height:1.25}
+  .hero-bottom-item .v{font-size:12.5px;line-height:1.25}
 
-  /* CHAPTER SECTIONS — heading fills 100svh, content flows below on scroll */
+  /* CHAPTER SECTIONS */
   #tech, #features, #privacy, #founders, #cta{
-    padding-top:0;padding-bottom:72px;
+    padding-top:0;padding-bottom:60px;
     display:block;
     border-top:1px solid var(--ink-200);
     min-height:0;
@@ -595,10 +593,23 @@ section:first-of-type{border-top:0}
     width:100%;
   }
 
-  /* shader headers fill full screen on mobile */
+  /* shader headers — immersive but safe on short phones */
   .tech-head-shader, .feat-head-shader, .priv-head-shader{
-    min-height:100svh;
-    padding-bottom:8vh;
+    min-height:max(400px, 75svh);
+    padding-bottom:6vh;
+  }
+  .tech-head-content, .feat-head-content{
+    padding:60px var(--pad-x);
+  }
+  .tech-head-content h2, .feat-head-content h2{
+    font-size:clamp(28px, 8vw, 44px);
+    line-height:1.08;
+    text-wrap:balance;
+  }
+  .tech-head-content .body, .feat-head-content .body{
+    font-size:14.5px;
+    line-height:1.55;
+    max-width:calc(100vw - 2 * var(--pad-x));
   }
 
   /* chapter head — fills screen, eyebrow + headline + body centered */
@@ -607,33 +618,34 @@ section:first-of-type{border-top:0}
     max-width:100%;
     margin:0 auto;
     padding:0;
-    min-height:100svh;
+    min-height:max(400px, 75svh);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
     position:relative;
   }
-  /* priv-head inner content on mobile */
   .priv-head{
-    padding:76px var(--pad-x) 10vh;
+    padding:60px var(--pad-x) 8vh;
     max-width:100%;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
   }
   .cta-head{
-    padding:76px var(--pad-x) 10vh;
+    padding:60px var(--pad-x) 8vh;
   }
   .priv-head .eyebrow, .cta-head .eyebrow{margin-bottom:24px;display:inline-block}
   .priv-head h2.display, .cta-head h2.display{
-    font-size:clamp(40px, 11vw, 56px);
-    line-height:1.04;
+    font-size:clamp(32px, 9vw, 48px);
+    line-height:1.06;
     margin-top:0 !important;
-    max-width:14ch;
+    max-width:100%;
     text-wrap:balance;
     text-align:center;
+    word-break:break-word;
+    overflow-wrap:break-word;
   }
   .priv-head .body, .cta-head .body{text-align:center}
   .priv-head .body{
-    font-size:15.5px;line-height:1.55;
+    font-size:15px;line-height:1.55;
     margin-top:22px !important;
-    max-width:38ch;
+    max-width:calc(100vw - 2 * var(--pad-x));
     color:var(--ink-700);
   }
 
@@ -648,7 +660,7 @@ section:first-of-type{border-top:0}
     border:1px solid oklch(0.95 0.02 80 / 0.08) !important;
     background:oklch(0.95 0.02 80 / 0.03);
     backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-    padding:22px 20px;
+    padding:20px 18px;
     min-height:0;
     gap:10px;
   }
@@ -661,16 +673,16 @@ section:first-of-type{border-top:0}
     opacity:0.55;
     display:inline;
   }
-  .priv-cell h4{font-size:18px;line-height:1.25}
-  .priv-cell p{font-size:14px;line-height:1.55;max-width:42ch}
+  .priv-cell h4{font-size:17px;line-height:1.25}
+  .priv-cell p{font-size:13.5px;line-height:1.55;max-width:calc(100vw - 2 * var(--pad-x))}
 
   /* Founders — dramatic pull-quote chapter */
   #founders{padding-top:0}
   .found{
     text-align:left;
-    min-height:100svh;
+    min-height:max(400px, 70svh);
     display:flex;flex-direction:column;justify-content:center;
-    padding:76px 0 10vh;
+    padding:60px 0 8vh;
     position:relative;
   }
   .found .eyebrow{margin-bottom:28px}
@@ -678,21 +690,22 @@ section:first-of-type{border-top:0}
   .found p:first-of-type::before{
     content:"\201C";
     font-family:var(--f-display);
-    font-size:64px;
+    font-size:56px;
     color:var(--glow);
     opacity:0.25;
     position:absolute;
-    top:-28px;left:-6px;
+    top:-24px;left:-4px;
     line-height:1;
     pointer-events:none;
   }
   .found p{
-    font-size:clamp(26px, 7vw, 36px) !important;
-    line-height:1.28;
+    font-size:clamp(22px, 6vw, 34px) !important;
+    line-height:1.3;
+    max-width:calc(100vw - 2 * var(--pad-x));
   }
   .found p + p{margin-top:14px}
   .found .sig{
-    margin-top:40px;padding:18px 20px;gap:14px;
+    margin-top:36px;padding:16px 18px;gap:14px;
     border-top:0;
     background:oklch(0.95 0.02 80 / 0.03);
     border:1px solid oklch(0.95 0.02 80 / 0.08);
@@ -704,7 +717,7 @@ section:first-of-type{border-top:0}
   #cta{padding-bottom:0}
   .cta-head{margin-bottom:0;text-align:center}
   .cta-head-shader .wrap{display:flex;flex-direction:column;align-items:center;width:100%}
-  .cta-head h2{font-size:clamp(34px, 9vw, 48px) !important;line-height:1.08}
+  .cta-head h2{font-size:clamp(28px, 8vw, 44px) !important;line-height:1.1;text-wrap:balance;word-break:break-word;overflow-wrap:break-word}
   .cta-form{
     grid-template-columns:1fr;gap:8px;
     padding:24px 20px 28px;
@@ -714,12 +727,12 @@ section:first-of-type{border-top:0}
     border:1px solid oklch(0.95 0.02 80 / 0.08);
     backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   }
-  .cta-form input{padding:18px 20px;font-size:15px;border-color:oklch(0.95 0.02 80 / 0.12)}
-  .cta-submit{padding:20px 22px;font-size:11px;letter-spacing:0.18em;min-height:52px}
+  .cta-form input{padding:16px 18px;font-size:15px;border-color:oklch(0.95 0.02 80 / 0.12)}
+  .cta-submit{padding:18px 20px;font-size:11px;letter-spacing:0.18em;min-height:50px}
   .cta-submit:active{transform:scale(0.98);opacity:0.9}
-  .cta-note{font-size:10px;padding:0 var(--pad-x) 24px;margin-top:0}
+  .cta-note{font-size:10px;padding:0 var(--pad-x) 24px;margin-top:10px}
 
-  /* Footer — force full-width block (prevents flex columnizing inside #cta) */
+  /* Footer */
   #cta .footer{
     display:flex !important;flex-direction:column !important;align-items:flex-start !important;
     width:auto;margin-left:calc(-1 * var(--pad-x));margin-right:calc(-1 * var(--pad-x));
@@ -759,19 +772,100 @@ section:first-of-type{border-top:0}
     background:radial-gradient(circle, oklch(0.62 0.24 295 / 0.06) 0%, transparent 70%);
     pointer-events:none;
   }
-
-  /* scroll-snap for page-by-page feel */
-  html{scroll-snap-type:y proximity}
-  section{scroll-snap-align:start}
-
 }
 
-/* Very small phones — fine-tune */
+/* ============ INTERMEDIATE PHONES (max 480px) ============ */
+@media (max-width:480px){
+  .hero-center .hero-headline{
+    font-size:clamp(34px, 9vw, 46px);
+  }
+  .tech-head-content h2, .feat-head-content h2{
+    font-size:clamp(26px, 7.5vw, 40px);
+  }
+  .priv-head h2.display, .cta-head h2.display{
+    font-size:clamp(30px, 8.5vw, 44px);
+  }
+  .cta-head h2{
+    font-size:clamp(26px, 7.5vw, 40px) !important;
+  }
+  .tech-head-shader, .feat-head-shader, .priv-head-shader{
+    min-height:max(360px, 65svh);
+  }
+  .priv-head-shader, .cta-head-shader{
+    min-height:max(360px, 65svh);
+  }
+  .found{
+    min-height:max(360px, 65svh);
+  }
+  .found p{
+    font-size:clamp(20px, 5.5vw, 30px) !important;
+  }
+  .priv-cell h4{font-size:16px}
+  .priv-cell p{font-size:13px}
+}
+
+/* ============ SMALL PHONES (max 380px) ============ */
 @media (max-width:380px){
-  .hero-center .hero-headline{font-size:44px}
-  .hero-pill .pill-text{width:clamp(140px, 46vw, 200px)}
-  .hero-bottom-item{min-width:130px}
-  .hero-bottom-item .v{font-size:12px}
+  :root{
+    --pad-x:16px;
+  }
+  .hero-center .hero-headline{
+    font-size:clamp(32px, 8.5vw, 42px);
+  }
+  .hero-pill .pill-text{width:clamp(120px, 42vw, 180px)}
+  .hero-pill .pill-new{font-size:8.5px;padding:0 8px}
+  .hero-bottom-item{
+    flex:1 1 calc(50% - 4px);
+  }
+  .hero-bottom-item .v{font-size:11.5px}
+  .hero-bottom-item .k{font-size:8px}
+  .tech-head-content h2, .feat-head-content h2{
+    font-size:clamp(24px, 7vw, 36px);
+  }
+  .priv-head h2.display, .cta-head h2.display{
+    font-size:clamp(28px, 8vw, 40px);
+  }
+  .cta-head h2{
+    font-size:clamp(24px, 7vw, 36px) !important;
+  }
+  .found p{
+    font-size:clamp(19px, 5vw, 28px) !important;
+  }
+  .priv-cell{padding:16px 14px}
+  .priv-cell h4{font-size:15px}
+  .priv-cell p{font-size:12.5px}
+  .cta-form{padding:20px 16px 24px}
+  .cta-form input{padding:14px 16px;font-size:14px}
+  .cta-submit{padding:16px 18px;font-size:10.5px}
+}
+
+/* ============ VERY SMALL PHONES (max 340px) ============ */
+@media (max-width:340px){
+  :root{
+    --pad-x:14px;
+  }
+  .hero-center .hero-headline{
+    font-size:30px;
+  }
+  .hero-pill{
+    flex-wrap:wrap;
+    height:auto;
+  }
+  .hero-pill .pill-text{width:clamp(100px, 38vw, 160px)}
+  .hero-bottom-item .v{font-size:11px}
+  .tech-head-content h2, .feat-head-content h2{
+    font-size:22px;
+  }
+  .priv-head h2.display, .cta-head h2.display{
+    font-size:26px;
+  }
+  .cta-head h2{
+    font-size:22px !important;
+  }
+  .found p{
+    font-size:18px !important;
+  }
+  .brand{font-size:16px}
 }
 
 /* ============ DESKTOP HERO LIGHT RESHAPE (≥721px only) ============ */
@@ -1084,7 +1178,7 @@ section:first-of-type{border-top:0}
 
   const scene    = new THREE.Scene();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1 : 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 1);
   const camera   = new THREE.OrthographicCamera(-1,1,1,-1,0,-1);
 
@@ -1124,8 +1218,8 @@ section:first-of-type{border-top:0}
   const uniforms = {
     resolution:  { value: [canvas.offsetWidth, canvas.offsetHeight] },
     time:        { value: 0.0 },
-    xScale:      { value: 1.2 },
-    yScale:      { value: 0.42 },
+    xScale:      { value: isMobile ? 2.4 : 1.2 },
+    yScale:      { value: isMobile ? 0.28 : 0.42 },
     distortion:  { value: 0.06 },
   };
 
@@ -1148,7 +1242,6 @@ section:first-of-type{border-top:0}
   window.addEventListener('resize', resize, { passive: true });
 
   let visible = true;
-  let frame = 0;
   const visObs = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
   visObs.observe(canvas);
 
@@ -1159,7 +1252,6 @@ section:first-of-type{border-top:0}
     (function animate(){
       requestAnimationFrame(animate);
       if(!visible) return;
-      if(isMobile && ++frame % 2) return;
       uniforms.time.value += 0.008;
       renderer.render(scene, camera);
     })();
@@ -1176,7 +1268,7 @@ section:first-of-type{border-top:0}
 
   const scene    = new THREE.Scene();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1 : 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 1);
   const camera   = new THREE.OrthographicCamera(-1,1,1,-1,0,-1);
 
@@ -1239,7 +1331,6 @@ section:first-of-type{border-top:0}
   window.addEventListener('resize', resize, { passive: true });
 
   let visible = true;
-  let frame = 0;
   const visObs = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
   visObs.observe(canvas);
 
@@ -1250,7 +1341,6 @@ section:first-of-type{border-top:0}
     (function animate(){
       requestAnimationFrame(animate);
       if(!visible) return;
-      if(isMobile && ++frame % 2) return;
       uniforms.time.value += 0.0695652174;
       if(uniforms.time.value > 1000.0) uniforms.time.value -= 1000.0;
       renderer.render(scene, camera);
@@ -1388,7 +1478,6 @@ section:first-of-type{border-top:0}
 
   var startTime = performance.now();
   var visible = true;
-  var frame = 0;
 
   var visObs = new IntersectionObserver(function(entries){
     visible = entries[0].isIntersecting;
@@ -1414,7 +1503,6 @@ section:first-of-type{border-top:0}
     (function animate(){
       requestAnimationFrame(animate);
       if(!visible) return;
-      if(isMobile && ++frame % 2) return;
       render();
     })();
   }
@@ -1549,7 +1637,6 @@ section:first-of-type{border-top:0}
 
   var startTime = performance.now() - 8000;
   var visible = true;
-  var frame = 0;
 
   var visObs = new IntersectionObserver(function(entries){
     visible = entries[0].isIntersecting;
@@ -1570,7 +1657,6 @@ section:first-of-type{border-top:0}
     (function animate(){
       requestAnimationFrame(animate);
       if(!visible) return;
-      if(isMobile && ++frame % 2) return;
       render();
     })();
   }
